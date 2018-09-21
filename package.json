@@ -1,0 +1,33 @@
+{
+  "name": "@code.gov/code-gov-adapter",
+  "version": "0.0.1",
+  "description": "A collection of adapters used by Code.gov",
+  "main": "index.js",
+  "scripts": {
+    "test": "nyc mocha tests"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gsa/code-gov-adapters.git"
+  },
+  "keywords": [
+    "adapters",
+    "gov",
+    "code.gov"
+  ],
+  "author": "Froilán Irizarry",
+  "license": "CC0-1.0",
+  "bugs": {
+    "url": "https://github.com/gsa/code-gov-adapters/issues"
+  },
+  "homepage": "https://github.com/gsa/code-gov-adapters#readme",
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "eslint": "^5.5.0",
+    "mocha": "^5.2.0",
+    "nyc": "^13.0.1"
+  },
+  "dependencies": {
+    "elasticsearch": "^15.1.1"
+  }
+}
