@@ -112,7 +112,7 @@ class ElasticsearchAdapter {
 
   async initIndexMapping( { index, type, body }) {
     try {
-      return await this.client.putMapping( { index, type, body });
+      return await this.client.indices.putMapping( { index, type, body });
     } catch (error) {
       console.error(error)
       throw error;
