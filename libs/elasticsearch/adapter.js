@@ -118,6 +118,17 @@ class ElasticsearchAdapter {
       throw error;
     }
   }
+
+  async forceMerge({ maxNumSegments, index, requestTimeout }) {
+    try {
+      return await this.client.indices.forcemerge({
+        maxNumSegments, index, requestTimeout
+      });
+    } catch(error) {
+      console.error(error);
+      throw error;
+    }
+  }
 }
 
 module.exports = {
