@@ -29,6 +29,7 @@
     "nyc": "^13.0.1"
   },
   "dependencies": {
+    "bodybuilder": "^2.2.15",
     "elasticsearch": "^15.1.1"
   }
 }

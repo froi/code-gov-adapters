@@ -129,6 +129,92 @@ class ElasticsearchAdapter {
       throw error;
     }
   }
+
+  async getSearchByFieldValue({ index, type, field, value }) {
+    logger.debug("Entered getRepoId: ", {value});
+    try {
+      const results = await this.client.search({
+        index,
+        type,
+        body: createQueryBody('must', field, value)
+      });
+
+      return parseResponse(results)
+
+    } catch(error) {
+      logger.error(error);
+      throw error;
+    }
+  }
+
+  async search({ index, type, searchTerm }) {
+    try {
+      const response = await this.client.search({
+        index,
+        type,
+        body: createSearchQuery(searchTerm)
+      });
+
+      let repos = Utils.omitPrivateKeys(
+        _.map(elasticSearchResponse.hits.hits, (hit) => {
+          let repo = _.merge({ searchScore: hit._score }, hit._source);
+          return repo;
+        })
+      );
+
+      let formattedRes = {
+        total: elasticSearchResponse.hits.total,
+        repos: repos
+      };
+      return callback(null, formattedRes);
+
+    } catch(error) {
+      console.error(error);
+      throw error;
+    }
+  }
+  async searchTerms(queryParams) {
+    // logger.info("Term searching", q);
+    try{
+      const results = await this.adapter.search({
+        index: 'terms',
+        type: 'term',
+        body: this._searchTermsQuery(queryParams)
+      });
+
+      return {
+        total: res.hits.total,
+        terms: _.map(res.hits.hits, (hit) => {
+          let source = hit._source;
+          source.score = hit._score;
+          return source;
+        })
+      };
+    } catch(error) {
+      console.error(error);
+      throw error;
+    }
+  }
+
+  searchStatus(callback) {
+    logger.info("Status searching");
+
+    this.adapter.search({
+      index: 'status',
+      type: 'status'
+    }, (error, elasticSearchResponse) => {
+      if(error) {
+        logger.error(error);
+        return callback(error);
+      }
+      const data = Utils.omitPrivateKeys(
+        _.map(elasticSearchResponse.hits.hits, (hit) => {
+          return hit._source;
+        })
+      );
+      return callback(null,  data);
+    });
+  }
 }
 
 module.exports = {
