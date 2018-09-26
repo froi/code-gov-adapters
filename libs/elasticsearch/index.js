@@ -1,5 +1,17 @@
-const {ElasticsearchAdapter} = require('./adapter');
+const { ElasticsearchAdapter } = require('./adapter');
+const {
+  createFieldSearchQuery,
+  createReposSearchQuery,
+  omitPrivateKeys,
+  parseResponse,
+  searchTermsQuery
+} = require('./utils');
 
 module.exports = {
-  ElasticsearchAdapter
-}
+  ElasticsearchAdapter,
+  createFieldSearchQuery,
+  createReposSearchQuery,
+  omitPrivateKeys,
+  parseResponse,
+  searchTermsQuery
+};

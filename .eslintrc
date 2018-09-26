@@ -1,0 +1,19 @@
+{
+  "extends": "eslint:recommended",
+  "env": {
+    "node": true,
+    "es6": true,
+    "mocha": true
+  },
+  "parserOptions": {
+    "sourceType": "module",
+    "allowImportExportEverywhere": true,
+    "ecmaVersion": 2018
+  },
+  "rules": {
+    "camelcase": "error",
+    "eol-last": "error",
+    "yoda": "error",
+    "no-empty-function": "error"
+  }
+}
