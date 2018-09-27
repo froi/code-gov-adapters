@@ -4,7 +4,9 @@
   "description": "A collection of adapters used by Code.gov",
   "main": "index.js",
   "scripts": {
-    "test": "nyc mocha tests"
+    "test": "./node_modules/.bin/nyc mocha tests",
+    "lint": "./node_modules/.bin/eslint .",
+    "lint-fix": "./node_modules/.bin/eslint . --fix"
   },
   "repository": {
     "type": "git",
@@ -36,6 +38,7 @@
   "dependencies": {
     "bodybuilder": "^2.2.15",
     "elasticsearch": "^15.1.1",
-    "lodash": "^4.17.11"
+    "lodash": "^4.17.11",
+    "moment": "^2.22.2"
   }
 }
