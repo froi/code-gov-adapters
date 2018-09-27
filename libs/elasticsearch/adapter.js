@@ -1,5 +1,5 @@
-const Elasticsearch = require('elasticsearch')
-const { createQueryBody, createSearchQuery, parseResponse } = require('./utils')
+const Elasticsearch = require('elasticsearch');
+const { parseResponse } = require('./utils');
 
 class ElasticsearchAdapter {
   constructor ({ hosts, logger, mappings=null, settings=null }) {
@@ -13,49 +13,49 @@ class ElasticsearchAdapter {
 
   async createIndex ({ index, settings=this.settings }) {
     try {
-      let params = { index }
+      let params = { index };
 
       if (settings) {
-        const body = { settings }
-        Object.assign(params, { body })
+        const body = { settings };
+        Object.assign(params, { body });
       }
 
-      return await this.client.indices.create(params)
+      return await this.client.indices.create(params);
     } catch (error) {
-      console.error(error)
-      throw error
+      this.logger.trace(error);
+      throw error;
     }
   }
   async deleteIndex (index) {
     try {
-      return await this.client.indices.delete({ index })
+      return await this.client.indices.delete({ index });
     } catch (error) {
-      console.error(error)
-      throw error
+      this.logger.trace(error);
+      throw error;
     }
   }
 
   async indexExists (index) {
     try {
-      return await this.client.indices.exists({ index })
+      return await this.client.indices.exists({ index });
     } catch (error) {
-      console.error(error)
-      throw error
+      this.logger.trace(error);
+      throw error;
     }
   }
 
   async indexDocument ({ index, type, id=null, document }) {
     try {
-      let params = { index, type, body: document }
+      let params = { index, type, body: document };
 
       if (id) {
-        params = Object.assign(params, { id })
+        params = Object.assign(params, { id });
       }
 
-      return await this.client.index(params)
+      return await this.client.index(params);
     } catch (error) {
-      console.error(error)
-      throw error
+      this.logger.trace(error);
+      throw error;
     }
   }
 
@@ -68,19 +68,19 @@ class ElasticsearchAdapter {
         body: {
           doc: document
         }
-      })
+      });
     } catch (error) {
-      console.error(error)
-      throw error
+      this.logger.trace(error);
+      throw error;
     }
   }
 
   async deleteDocument ({ index, type, id }) {
     try {
-      return await this.client.delete({ index, type, id })
+      return await this.client.delete({ index, type, id });
     } catch (error) {
-      console.error(error)
-      throw error
+      this.logger.trace(error);
+      throw error;
     }
   }
 
@@ -88,7 +88,7 @@ class ElasticsearchAdapter {
     /*
      * Elasticsearch returns the "list" of indexes as object properties.
      * {
-     *   "terms20180913_220819": { -> this is the index name
+     *   "index-name": { -> this is the index name
      *     "aliases":{
      *       "terms":{} -> this is the alias
      *     }
@@ -96,27 +96,27 @@ class ElasticsearchAdapter {
      * }
      */
     try {
-      const result = await this.client.getAlias({ name: alias })
-      const keys = Object.keys(result)
+      const result = await this.client.getAlias({ name: alias });
+      const keys = Object.keys(result);
 
       return keys.filter(key => {
-        const aliases = result[key]['aliases']
-        const aliasKeys = Object.keys(aliases)
+        const aliases = result[key]['aliases'];
+        const aliasKeys = Object.keys(aliases);
 
-        return aliasKeys.includes(alias)
-      })
+        return aliasKeys.includes(alias);
+      });
     } catch (error) {
-      console.error(error)
-      throw error
+      this.logger.trace(error);
+      throw error;
     }
   }
 
   async initIndexMapping ({ index, type, body=this.mappings }) {
     try {
-      return await this.client.indices.putMapping({ index, type, body })
+      return await this.client.indices.putMapping({ index, type, body });
     } catch (error) {
-      console.error(error)
-      throw error
+      this.logger.trace(error);
+      throw error;
     }
   }
 
@@ -124,10 +124,10 @@ class ElasticsearchAdapter {
     try {
       return await this.client.indices.forcemerge({
         maxNumSegments, index, requestTimeout
-      })
+      });
     } catch (error) {
-      console.error(error)
-      throw error
+      this.logger.trace(error);
+      throw error;
     }
   }
 
@@ -138,22 +138,22 @@ class ElasticsearchAdapter {
    */
   async search ({ index, type, body=null }) {
     try {
-      const params = { index, type };
+      let params = { index, type };
 
       if (body) {
-        params = Object.assign(params, { body })
+        params = Object.assign(params, { body });
       }
 
-      const response = await this.client.search(params)
+      const response = await this.client.search(params);
 
-      return parseResponse(response)
+      return parseResponse(response);
     } catch (error) {
-      console.error(error)
-      throw error
+      this.logger.trace(error);
+      throw error;
     }
   }
 }
 
 module.exports = {
   ElasticsearchAdapter
-}
+};
