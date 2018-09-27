@@ -11,9 +11,11 @@
     "ecmaVersion": 2018
   },
   "rules": {
-    "camelcase": "error",
+    "camelcase": "off",
     "eol-last": "error",
     "yoda": "error",
-    "no-empty-function": "error"
+    "no-empty-function": "error",
+    "no-console": "warn",
+    "semi": "error"
   }
 }
