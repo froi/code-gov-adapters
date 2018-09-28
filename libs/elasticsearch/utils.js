@@ -325,10 +325,10 @@ function createReposSearchQuery ({ queryParams, indexMappings=null }) {
     _addFieldFilters({ body, queryParams, searchProperties: flattenedIndexMappings });
   }
 
-  _addSizeFromParams(body, queryParams);
+  _addSizeFromParams({ body, queryParams });
 
-  _addIncludeExclude(body, queryParams);
-  _addSortOrder(body, queryParams);
+  _addIncludeExclude({ body, queryParams });
+  _addSortOrder({ body, queryParams });
 
   let query = body.build('v2');
 
