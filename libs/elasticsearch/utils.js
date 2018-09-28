@@ -102,7 +102,7 @@ function createFieldSearchQuery ({ queryType, field, value }) {
   return query;
 }
 
-function _addMatchPhraseForFullText (body, queryParams, field, boost) {
+function _addMatchPhraseForFullText ({ body, queryParams, field, boost }) {
   let query = { 'match_phrase': {} };
   query['match_phrase'][field] = {
     'query': queryParams.q
@@ -115,14 +115,14 @@ function _addMatchPhraseForFullText (body, queryParams, field, boost) {
   body.query('bool', 'should', query);
 }
 
-function _addMatchForFullText (body, queryParams, field) {
+function _addMatchForFullText ({ body, queryParams, field }) {
   let query = { 'match': {} };
   query['match'][field] = queryParams.q;
 
   body.query('bool', 'should', query);
 }
 
-function _addCommonCutoffForFullText (body, queryParams, field, boost) {
+function _addCommonCutoffForFullText ({ body, queryParams, field, boost }) {
   let query = { 'common': {} };
 
   query['common'][field] = {
@@ -138,7 +138,7 @@ function _addCommonCutoffForFullText (body, queryParams, field, boost) {
   body.query('bool', 'should', query);
 }
 
-function _addFullTextQuery (body, searchQuery) {
+function _addFullTextQuery ({ body, searchQuery }) {
   const searchFields = [
     'name^5',
     'name.keyword^10',
@@ -156,7 +156,7 @@ function _addFullTextQuery (body, searchQuery) {
   body.query('multi_match', 'fields', searchFields, { 'query': searchQuery }, { 'type': 'best_fields' });
 }
 
-function _addStringFilter (body, field, filter) {
+function _addStringFilter ({ body, field, filter }) {
   if (filter instanceof Array) {
     filter.forEach((filterElement) => {
       body.orFilter('term', `${field}.keyword`, filterElement.toLowerCase());
@@ -208,7 +208,7 @@ function _addDateRangeFilters ({ body, queryParams, searchProperties }) {
   });
 }
 
-function _addSizeFromParams (body, queryParams) {
+function _addSizeFromParams ({ body, queryParams }) {
   queryParams.size = queryParams.size || REPO_RESULT_SIZE_DEFAULT;
   let size = queryParams.size > REPO_RESULT_SIZE_MAX ? REPO_RESULT_SIZE_MAX : queryParams.size;
   let from = queryParams.from || 0;
@@ -216,7 +216,7 @@ function _addSizeFromParams (body, queryParams) {
   body.from(from);
 }
 
-function _addIncludeExclude (body, queryParams) {
+function _addIncludeExclude ({ body, queryParams }) {
   let include = queryParams.include || null;
   let exclude = queryParams.exclude || null;
   let _source = {};
@@ -251,8 +251,8 @@ function _addIncludeExclude (body, queryParams) {
  * @param {any} q The query parameters a user is searching for
  */
 function _addFieldFilters ({ body, queryParams, indexMappings }) {
-  _addStringFilters(body, queryParams, indexMappings);
-  _addDateRangeFilters(body, queryParams, indexMappings);
+  _addStringFilters({ body, queryParams, indexMappings });
+  _addDateRangeFilters({ body, queryParams, indexMappings });
 }
 
 function _getSortValues(querySortParams) {
@@ -286,7 +286,7 @@ function _getSortOptions(sortValue) {
  * @param {any} body An instance of a Bodybuilder class
  * @param {any} queryParams The query parameters a user is searching for
  */
-function _addSortOrder (body, queryParams) {
+function _addSortOrder ({ body, queryParams }) {
   body.sort('_score', 'desc');
   body.sort('score', 'desc');
 
@@ -309,7 +309,7 @@ function _addSortOrder (body, queryParams) {
  * @param {*} queryParams
  * @param {*} indexMappings
  */
-function createReposSearchQuery (queryParams, indexMappings=null) {
+function createReposSearchQuery ({ queryParams, indexMappings=null }) {
   let body = new Bodybuilder();
   let flattenedIndexMappings;
 
