@@ -250,9 +250,9 @@ function _addIncludeExclude ({ body, queryParams }) {
  * @param {any} body An instance of a Bodybuilder class
  * @param {any} q The query parameters a user is searching for
  */
-function _addFieldFilters ({ body, queryParams, indexMappings }) {
-  _addStringFilters({ body, queryParams, indexMappings });
-  _addDateRangeFilters({ body, queryParams, indexMappings });
+function _addFieldFilters ({ body, queryParams, searchProperties }) {
+  _addStringFilters({ body, queryParams, searchProperties });
+  _addDateRangeFilters({ body, queryParams, searchProperties });
 }
 
 function _getSortValues(querySortParams) {
@@ -318,11 +318,11 @@ function createReposSearchQuery ({ queryParams, indexMappings=null }) {
   }
 
   if (queryParams.q) {
-    _addFullTextQuery(body, queryParams.q);
+    _addFullTextQuery({ body, searchQuery: queryParams.q});
   }
 
   if(flattenedIndexMappings) {
-    _addFieldFilters({ body, queryParams, flattenedIndexMappings });
+    _addFieldFilters({ body, queryParams, searchProperties: flattenedIndexMappings });
   }
 
   _addSizeFromParams(body, queryParams);
