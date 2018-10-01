@@ -398,14 +398,29 @@ function searchTermsQuery ({ queryParams, termTypesToSearch }) {
   return query;
 }
 
-function getQueryByTerm({ term, termType }) {
+function getQueryByTerm({ term, termType, size=10, from=0 }) {
   let body = new Bodybuilder();
 
   body.query('match', 'term', term);
   body.query('match', 'term_type', termType);
+  body.size(size);
+  body.from(from);
 
   return body.build();
 
+}
+
+function getLanguagesSearchQuery(options) {
+  const termType = "languages";
+  const size = options.size || 100;
+  const from = options.from || 0;
+  let term;
+
+  if (options.language) {
+    term = options.language;
+  }
+
+  return getQueryByTerm({ term, termType, size, from });
 }
 module.exports = {
   createFieldSearchQuery,
@@ -425,5 +440,6 @@ module.exports = {
   _addMatchPhraseForFullText,
   _addMatchForFullText,
   _addCommonCutoffForFullText,
-  getQueryByTerm
+  getQueryByTerm,
+  getLanguagesSearchQuery
 };

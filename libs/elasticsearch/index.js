@@ -5,7 +5,8 @@ const {
   omitPrivateKeys,
   parseResponse,
   searchTermsQuery,
-  getQueryByTerm
+  getQueryByTerm,
+  getLanguagesSearchQuery
 } = require('./utils');
 
 module.exports = {
@@ -15,5 +16,6 @@ module.exports = {
   omitPrivateKeys,
   parseResponse,
   searchTermsQuery,
-  getQueryByTerm
+  getQueryByTerm,
+  getLanguagesSearchQuery
 };
