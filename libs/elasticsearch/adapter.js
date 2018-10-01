@@ -2,10 +2,11 @@ const Elasticsearch = require('elasticsearch');
 const { parseResponse } = require('./utils');
 
 class ElasticsearchAdapter {
-  constructor ({ hosts, logger, mappings=null, settings=null }) {
+  constructor ({ hosts, logger, mappings=null, settings=null, requestTimeout=30000 }) {
     this.client = new Elasticsearch.Client({
       hosts: hosts,
-      log: logger
+      log: logger,
+      requestTimeout
     });
     this.logger = new logger({name: 'elasticseaerch-adapter'});
     this.mappings = mappings;
