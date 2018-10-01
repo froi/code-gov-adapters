@@ -398,6 +398,15 @@ function searchTermsQuery ({ queryParams, termTypesToSearch }) {
   return query;
 }
 
+function getQueryByTerm({ term, termType }) {
+  let body = new Bodybuilder();
+
+  body.query('match', 'term', term);
+  body.query('match', 'term_type', termType);
+
+  return body.build();
+
+}
 module.exports = {
   createFieldSearchQuery,
   createReposSearchQuery,
@@ -415,5 +424,6 @@ module.exports = {
   _addSortOrder,
   _addMatchPhraseForFullText,
   _addMatchForFullText,
-  _addCommonCutoffForFullText
+  _addCommonCutoffForFullText,
+  getQueryByTerm
 };
