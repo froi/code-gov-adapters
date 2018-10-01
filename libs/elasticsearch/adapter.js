@@ -7,6 +7,7 @@ class ElasticsearchAdapter {
       hosts: hosts,
       log: logger
     });
+    this.logger = new logger({name: 'elasticseaerch-adapter'});
     this.mappings = mappings;
     this.settings = settings;
   }
