@@ -4,7 +4,8 @@ const {
   createReposSearchQuery,
   omitPrivateKeys,
   parseResponse,
-  searchTermsQuery
+  searchTermsQuery,
+  getQueryByTerm
 } = require('./utils');
 
 module.exports = {
@@ -13,5 +14,6 @@ module.exports = {
   createReposSearchQuery,
   omitPrivateKeys,
   parseResponse,
-  searchTermsQuery
+  searchTermsQuery,
+  getQueryByTerm
 };
