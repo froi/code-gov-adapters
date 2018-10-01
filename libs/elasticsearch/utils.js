@@ -398,10 +398,13 @@ function searchTermsQuery ({ queryParams, termTypesToSearch }) {
   return query;
 }
 
-function getQueryByTerm({ term, termType, size=10, from=0 }) {
+function getQueryByTerm({ term=null, termType, size=10, from=0 }) {
   let body = new Bodybuilder();
 
-  body.query('match', 'term', term);
+  if(term) {
+    body.query('match', 'term', term);
+  }
+
   body.query('match', 'term_type', termType);
   body.size(size);
   body.from(from);
