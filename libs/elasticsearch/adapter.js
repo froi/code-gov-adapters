@@ -163,6 +163,15 @@ class ElasticsearchAdapter {
       throw error;
     }
   }
+
+  async updateAliases({ body }) {
+    try {
+      return await this.client.indices.updateAliases({ body });
+    } catch(error) {
+      this.logger.trace(error);
+      throw error;
+    }
+  }
 }
 
 module.exports = {
