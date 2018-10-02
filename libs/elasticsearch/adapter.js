@@ -154,6 +154,15 @@ class ElasticsearchAdapter {
       throw error;
     }
   }
+
+  async aliasExists({ name }) {
+    try {
+      return await this.client.indices.existsAlias({ name });
+    } catch(error) {
+      this.logger.trace(error);
+      throw error;
+    }
+  }
 }
 
 module.exports = {
