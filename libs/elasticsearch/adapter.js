@@ -98,7 +98,7 @@ class ElasticsearchAdapter {
      * }
      */
     try {
-      const result = await this.client.getAlias({ name: alias });
+      const result = await this.client.indices.getAlias({ name: alias });
       const keys = Object.keys(result);
 
       return keys.filter(key => {
