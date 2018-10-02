@@ -28,9 +28,9 @@ class ElasticsearchAdapter {
       throw error;
     }
   }
-  async deleteIndex (index) {
+  async deleteIndex (index, requestTimeout=30000) {
     try {
-      return await this.client.indices.delete({ index });
+      return await this.client.indices.delete({ index, requestTimeout });
     } catch (error) {
       this.logger.trace(error);
       throw error;
@@ -168,6 +168,15 @@ class ElasticsearchAdapter {
     try {
       return await this.client.indices.updateAliases({ body });
     } catch(error) {
+      this.logger.trace(error);
+      throw error;
+    }
+  }
+
+  async getSettings({ index, name }) {
+    try {
+      return await this.client.indices.getSettings({ index, name });
+    } catch (error) {
       this.logger.trace(error);
       throw error;
     }
