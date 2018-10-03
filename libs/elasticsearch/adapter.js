@@ -28,7 +28,7 @@ class ElasticsearchAdapter {
       throw error;
     }
   }
-  async deleteIndex (index, requestTimeout=30000) {
+  async deleteIndex ({ index, requestTimeout=30000 }) {
     try {
       return await this.client.indices.delete({ index, requestTimeout });
     } catch (error) {
@@ -86,7 +86,7 @@ class ElasticsearchAdapter {
     }
   }
 
-  async getIndexForAlias ({ alias }) {
+  async getIndexesForAlias({ alias }) {
     /*
      * Elasticsearch returns the "list" of indexes as object properties.
      * {
