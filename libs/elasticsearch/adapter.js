@@ -48,13 +48,13 @@ class ElasticsearchAdapter {
 
   async indexDocument ({ index, type, id=null, document, requestTimeout=30000 }) {
     try {
-      let params = { index, type, requestTimeout, body: document };
-
-      if (id) {
-        params = Object.assign(params, { id });
-      }
-
-      return await this.client.index(params);
+      return await this.client.index({
+        index,
+        type,
+        id,
+        body: document,
+        requestTimeout
+      });
     } catch (error) {
       this.logger.trace(error);
       throw error;
