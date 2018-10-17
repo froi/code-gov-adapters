@@ -70,19 +70,25 @@ function omitPrivateKeys (collection) {
  */
 function parseResponse (response) {
   let hits = [];
+  let aggregations = [];
 
   if (response.hasOwnProperty('hits') && response.hits.hasOwnProperty('hits')) {
     hits = response.hits.hits;
   }
 
+  if(response.hasOwnProperty('aggregations')) {
+    aggregations = response.aggregations;
+  }
+
   if (hits.length > 0) {
     return {
       total: response.hits.total,
-      data: hits.map(hit => _.merge({ searchScore: hit._score }, omitPrivateKeys(hit._source)))
+      data: hits.map(hit => _.merge({ searchScore: hit._score }, omitPrivateKeys(hit._source))),
+      aggregations
     };
   }
 
-  return { total: 0, data: [] };
+  return { total: 0, data: [], aggregations };
 }
 
 /**
