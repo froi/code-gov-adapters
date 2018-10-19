@@ -178,6 +178,12 @@ function _addStringFilters ({ body, queryParams, searchProperties }) {
       _addStringFilter(body, field, queryParams[field]);
     }
   });
+
+  searchProperties['text'].forEach((field) => {
+    if (queryParams[field]) {
+      _addStringFilter(body, field, queryParams[field]);
+    }
+  });
 }
 
 function _addDateRangeFilters ({ body, queryParams, searchProperties }) {
