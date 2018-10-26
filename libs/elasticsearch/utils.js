@@ -175,13 +175,13 @@ function _addStringFilter ({ body, field, filter }) {
 function _addStringFilters ({ body, queryParams, searchProperties }) {
   searchProperties['keyword'].forEach((field) => {
     if (queryParams[field]) {
-      _addStringFilter(body, field, queryParams[field]);
+      _addStringFilter({ body, field, filter: queryParams[field] });
     }
   });
 
   searchProperties['text'].forEach((field) => {
     if (queryParams[field]) {
-      _addStringFilter(body, field, queryParams[field]);
+      _addStringFilter({ body, field, filter: queryParams[field] });
     }
   });
 }
