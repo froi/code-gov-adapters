@@ -326,7 +326,7 @@ function createReposSearchQuery ({ queryParams, indexMappings=null }) {
   let flattenedIndexMappings;
 
   if(indexMappings) {
-    flattenedIndexMappings = getFlattenedMappingPropertiesByType(indexMappings);
+    flattenedIndexMappings = getFlattenedMappingPropertiesByType(indexMappings['repo']);
   }
 
   if (queryParams.q) {
