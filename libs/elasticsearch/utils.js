@@ -212,7 +212,7 @@ function _addStringFilter ({ body, fieldType, field, filterValue }) {
  */
 function _addNestedFilter({ body, fieldType, field, filterValue }) {
   body.query('nested', 'path', searchFilters[fieldType][field]['path'], q => {
-    searchFilters[fieldType][field]['terms'].forEach(term => q.query('term', term, filterValue));
+    searchFilters[fieldType][field]['terms'].forEach(term => q.orQuery('term', term, filterValue));
     return q;
   });
 }
@@ -224,21 +224,21 @@ function _addNestedFilter({ body, fieldType, field, filterValue }) {
  * @param {object} param0.queryParams search and filter parameters
  */
 function _addStringFilters ({ body, queryParams }) {
-  searchFilters['keyword'].forEach(field => {
+  Object.keys(searchFilters['keyword']).forEach(field => {
     if (queryParams[field]) {
       _addStringFilter({ body, fieldType: 'keyword', field, filterValue: queryParams[field] });
     }
   });
 
-  searchFilters['text'].forEach(field => {
+  Object.keys(searchFilters['text']).forEach(field => {
     if (queryParams[field]) {
       _addStringFilter({ body, fieldType: 'text', field, filterValue: queryParams[field] });
     }
   });
 
-  searchFilters['nested'].forEach(field => {
+  Object.keys(searchFilters['nested']).forEach(field => {
     if (queryParams[field]) {
-      _addNestedFilter({ body, fieldType: 'text', field, filterValue: queryParams[field] });
+      _addNestedFilter({ body, fieldType: 'nested', field, filterValue: queryParams[field] });
     }
   });
 }
