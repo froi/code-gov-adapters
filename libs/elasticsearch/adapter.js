@@ -17,7 +17,7 @@ class ElasticsearchAdapter {
         warn: (msg) => console.warn(`elasticseaerch-adapter - ${msg}`)
       };
     }
-    this.client = new Elasticsearch.Client({ params });
+    this.client = new Elasticsearch.Client( params );
     this.mappings = mappings;
     this.settings = settings;
   }
