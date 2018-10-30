@@ -1,7 +1,7 @@
 const _ = require('lodash');
 const Bodybuilder = require('bodybuilder');
+const searchFilters = require('./config/search_filter_fields.json');
 
-// MAy be deleted
 const moment = require('moment');
 const DATE_FORMAT = 'YYYY-MM-DD';
 const REPO_RESULT_SIZE_MAX = 1000;
@@ -12,7 +12,7 @@ const ELASTICSEARCH_SORT_ORDERS = ['asc', 'desc'];
 const ELASTICSEARCH_SORT_MODES = ['min', 'max', 'sum', 'avg', 'median'];
 
 /**
- * Flaten Elasticsearch mappings by type.
+ * Flaten Elasticsearch mappings by type. (depricated)
  * @param {object} mapping The Elasticsearch index mappings. https://www.elastic.co/guide/en/elasticsearch/reference/6.3/mapping.html
  * @returns {object} Flattened Elasticsearch mapping object grouped by type.
  */
@@ -162,60 +162,149 @@ function _addFullTextQuery ({ body, searchQuery }) {
   body.query('multi_match', 'fields', searchFields, { 'query': searchQuery }, { 'type': 'best_fields' });
 }
 
-function _addStringFilter ({ body, field, filter }) {
-  if (filter instanceof Array) {
-    filter.forEach((filterElement) => {
-      body.orFilter('term', `${field}.keyword`, filterElement.toLowerCase());
+/**
+ * Process the value to used as a filter.
+ * If value is a number then convert it to one or if a string convert it to lowercase.
+ * @param {any} value The value to process. Should be a number or a string
+ */
+function _processFilterValue(value) {
+  if(isNaN(parseFloat(value))) {
+    return value.toLowerCase();
+  }
+
+  return parseFloat(value);
+}
+
+/**
+ * Add string filters to the Elasticsearch query body.
+ * This uses the searchFilters variable to know which fields are available for filtering.
+ * @param {Object} param0
+ * @param {Object} param0.body Bodybuilder instance
+ * @param {string} param0.fieldType The data type of the field to filter by
+ * @param {string} param0.field The field to filter by
+ * @param {string} param0.filterValue The value to filter by
+ */
+function _addStringFilter ({ body, fieldType, field, filterValue }) {
+
+  // query params could be used multiple times. Express converts them into an Array
+  // Eg. http://localhost:3000/api/repos?q=API&license=cc0&license=gpl
+  // This is turned into queryParams['permissions.license'] = ['cc0', 'gpl']
+  if (filterValue instanceof Array) {
+    filterValue.forEach((item) => {
+      body.orFilter('term', searchFilters[fieldType][field]['term'], _processFilterValue(item));
     });
   } else {
-    body.filter('term', `${field}.keyword`, filter.toLowerCase());
+    body.filter('term', searchFilters[fieldType][field]['term'], _processFilterValue(filterValue));
   }
 }
 
-function _addStringFilters ({ body, queryParams, searchProperties }) {
-  searchProperties['keyword'].forEach((field) => {
+/**
+ * Add nested query / filters to the Elasticsearch query body.
+ * This uses the searchFilters variable to know which fields are available for filtering.
+ * Additional reading on nested queries and datatype:
+ * https://www.elastic.co/guide/en/elasticsearch/reference/5.6/nested.html
+ * https://www.elastic.co/guide/en/elasticsearch/reference/5.6/query-dsl-nested-query.html
+ * @param {Object} param0
+ * @param {Object} param0.body Bodybuilder instance
+ * @param {string} param0.fieldType The data type of the field to filter by
+ * @param {string} param0.field The field to filter by
+ * @param {string} param0.filterValue The value to filter by
+ */
+function _addNestedFilter({ body, fieldType, field, filterValue }) {
+  body.query('nested', 'path', searchFilters[fieldType][field]['path'], q => {
+    searchFilters[fieldType][field]['terms'].forEach(term => q.query('term', term, filterValue));
+    return q;
+  });
+}
+
+/**
+ * Adds all filters needed for the Elasticsearch query.
+ * @param {object} param0
+ * @param {object} param0.body Bodybuilder instance
+ * @param {object} param0.queryParams search and filter parameters
+ */
+function _addStringFilters ({ body, queryParams }) {
+  searchFilters['keyword'].forEach(field => {
     if (queryParams[field]) {
-      _addStringFilter({ body, field, filter: queryParams[field] });
+      _addStringFilter({ body, fieldType: 'keyword', field, filterValue: queryParams[field] });
     }
   });
 
-  searchProperties['text'].forEach((field) => {
+  searchFilters['text'].forEach(field => {
     if (queryParams[field]) {
-      _addStringFilter({ body, field, filter: queryParams[field] });
+      _addStringFilter({ body, fieldType: 'text', field, filterValue: queryParams[field] });
+    }
+  });
+
+  searchFilters['nested'].forEach(field => {
+    if (queryParams[field]) {
+      _addNestedFilter({ body, fieldType: 'text', field, filterValue: queryParams[field] });
     }
   });
 }
 
-function _addDateRangeFilters ({ body, queryParams, searchProperties }) {
-  const _addRangeFilter = (field, lteRange, gteRange) => {
-    let ranges = {};
-
-    const _addRangeForRangeType = (rangeType, dateRange) => {
-      if (dateRange) {
-        dateRange = moment(dateRange);
-        if (dateRange.isValid()) {
-          ranges[rangeType] = dateRange.utc().format(DATE_FORMAT);
-        } else {
-          throw new Error(
-            `Invalid date supplied for ${field}_${rangeType}. ` +
-            `Please use format ${DATE_FORMAT} or ISO8601.`
-          );
-        }
-      }
-    };
-
-    _addRangeForRangeType('lte', lteRange);
-    _addRangeForRangeType('gte', gteRange);
-
-    body.filter('range', field, ranges);
+function _getRanges({ field, queryParams }) {
+  let lteRange;
+  let gteRange;
+  if(queryParams.hasOwnProperty(field + '_lte')) {
+    lteRange = queryParams[field + '_lte'];
+  }
+  if(queryParams.hasOwnProperty(field + '_gte')) {
+    gteRange = queryParams[field + '_gte'];
+  }
+  return {
+    lteRange,
+    gteRange
   };
+}
+function _processDate(date) {
+  const tmpDate = moment(date);
+  if (tmpDate.isValid()) {
+    try {
+      return tmpDate.utc().format(DATE_FORMAT);
+    } catch(error) {
+      throw error;
+    }
+  }
+  throw new Error('Invalid date.');
+}
 
-  let possibleRangeProps = searchProperties['date'];
-  possibleRangeProps.forEach((field) => {
-    let lteRange = queryParams[field + '_lte'];
-    let gteRange = queryParams[field + '_gte'];
+function _addRangeFilter ({ body, field, lteRange, gteRange }) {
+  let ranges = {};
+
+  if(lteRange) {
+    try {
+      ranges['lte'] = _processDate(lteRange);
+    } catch(error) {
+      console.log(`[ERROR] Field: ${field} - RangeType: lte - Value: ${lteRange} - ${error}`);
+    }
+  }
+
+  if(gteRange) {
+    try {
+      ranges['gte'] = _processDate(gteRange);
+    } catch(error) {
+      console.log(`[ERROR] Field: ${field} - RangeType: gte - Value: ${gteRange} - ${error}`);
+    }
+  }
+
+  body.filter('range', field, ranges);
+}
+
+/**
+ * Adds date range filters to Elasticsearch query body.
+ * @param {*} param0
+ * @param {object} param0.body Bodybuilder instance
+ * @param {object} param0.queryParams search and filter parameters
+ */
+function _addDateRangeFilters ({ body, queryParams }) {
+  const possibleRangeProps = Object.keys(searchFilters['date']);
+
+  possibleRangeProps.forEach((dateField) => {
+    const field = searchFilters['date'][dateField]['term'];
+    const { lteRange, gteRange } = _getRanges({ field, queryParams });
     if (lteRange || gteRange) {
-      _addRangeFilter(field, lteRange, gteRange);
+      _addRangeFilter({ body, field, lteRange, gteRange });
     }
   });
 }
@@ -262,9 +351,9 @@ function _addIncludeExclude ({ body, queryParams }) {
  * @param {any} body An instance of a Bodybuilder class
  * @param {any} q The query parameters a user is searching for
  */
-function _addFieldFilters ({ body, queryParams, searchProperties }) {
-  _addStringFilters({ body, queryParams, searchProperties });
-  _addDateRangeFilters({ body, queryParams, searchProperties });
+function _addFieldFilters ({ body, queryParams }) {
+  _addStringFilters({ body, queryParams });
+  _addDateRangeFilters({ body, queryParams });
 }
 
 function _getSortValues(querySortParams) {
@@ -321,20 +410,17 @@ function _addSortOrder ({ body, queryParams }) {
  * @param {*} queryParams
  * @param {*} indexMappings
  */
-function createReposSearchQuery ({ queryParams, indexMappings=null }) {
+function createReposSearchQuery ({ queryParams }) {
   let body = new Bodybuilder();
-  let flattenedIndexMappings;
-
-  if(indexMappings) {
-    flattenedIndexMappings = getFlattenedMappingPropertiesByType(indexMappings['repo']);
-  }
 
   if (queryParams.q) {
     _addFullTextQuery({ body, searchQuery: queryParams.q});
   }
 
-  if(flattenedIndexMappings) {
-    _addFieldFilters({ body, queryParams, searchProperties: flattenedIndexMappings });
+  const filters = Object.keys(queryParams).filter(key => key !== 'q');
+
+  if(filters.length > 0) {
+    _addFieldFilters({ body, queryParams });
   }
 
   _addSizeFromParams({ body, queryParams });
@@ -438,23 +524,31 @@ function getLanguagesSearchQuery(options) {
   return getQueryByTerm({ term, termType, size, from });
 }
 module.exports = {
-  createFieldSearchQuery,
-  createReposSearchQuery,
+  getFlattenedMappingPropertiesByType,
   omitPrivateKeys,
   parseResponse,
-  searchTermsQuery,
-  getFlattenedMappingPropertiesByType,
+  createFieldSearchQuery,
+  _addMatchPhraseForFullText,
+  _addMatchForFullText,
+  _addCommonCutoffForFullText,
   _addFullTextQuery,
+  _processFilterValue,
   _addStringFilter,
+  _addNestedFilter,
   _addStringFilters,
+  _getRanges,
+  _processDate,
+  _addRangeFilter,
   _addDateRangeFilters,
   _addSizeFromParams,
   _addIncludeExclude,
   _addFieldFilters,
+  _getSortValues,
+  _getSortOptions,
   _addSortOrder,
-  _addMatchPhraseForFullText,
-  _addMatchForFullText,
-  _addCommonCutoffForFullText,
+  createReposSearchQuery,
+  getTermTypes,
+  searchTermsQuery,
   getQueryByTerm,
   getLanguagesSearchQuery
 };
