@@ -212,7 +212,7 @@ function _addStringFilter ({ body, fieldType, field, filterValue }) {
  */
 function _addNestedFilter({ body, fieldType, field, filterValue }) {
   body.query('nested', 'path', searchFilters[fieldType][field]['path'], q => {
-    searchFilters[fieldType][field]['terms'].forEach(term => q.orQuery('term', term, filterValue));
+    searchFilters[fieldType][field]['terms'].forEach(term => q.orQuery('term', term, filterValue.toLowerCase()));
     return q;
   });
 }
