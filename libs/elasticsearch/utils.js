@@ -1,7 +1,6 @@
 const _ = require('lodash');
 const Bodybuilder = require('bodybuilder');
-const searchFilters = require('./config/search_filter_fields.json');
-
+const { getConfig } = require('./config');
 const moment = require('moment');
 const DATE_FORMAT = 'YYYY-MM-DD';
 const REPO_RESULT_SIZE_MAX = 1000;
@@ -177,68 +176,72 @@ function _processFilterValue(value) {
 
 /**
  * Add string filters to the Elasticsearch query body.
- * This uses the searchFilters variable to know which fields are available for filtering.
- * @param {Object} param0
- * @param {Object} param0.body Bodybuilder instance
- * @param {string} param0.fieldType The data type of the field to filter by
- * @param {string} param0.field The field to filter by
- * @param {string} param0.filterValue The value to filter by
+ *
+ * @param {object} filters
+ * @param {object} filters.body Bodybuilder instance
+ * @param {string} filters.fieldType The data type of the field to filter by
+ * @param {string} filters.field The field to filter by
+ * @param {string} filters.filterValue The value to filter by
+ * @param {object} filters.filterMappings Mappings of filter properties to Elasticsearch fields. These values are set in the package's config.
  */
-function _addStringFilter ({ body, fieldType, field, filterValue }) {
+function _addStringFilter ({ body, fieldType, field, filterValue, filterMappings }) {
 
   // query params could be used multiple times. Express converts them into an Array
   // Eg. http://localhost:3000/api/repos?q=API&license=cc0&license=gpl
   // This is turned into queryParams['permissions.license'] = ['cc0', 'gpl']
   if (filterValue instanceof Array) {
     filterValue.forEach((item) => {
-      body.orFilter('term', searchFilters[fieldType][field]['term'], _processFilterValue(item));
+      body.orFilter('term', filterMappings[fieldType][field]['term'], _processFilterValue(item));
     });
   } else {
-    body.filter('term', searchFilters[fieldType][field]['term'], _processFilterValue(filterValue));
+    body.filter('term', filterMappings[fieldType][field]['term'], _processFilterValue(filterValue));
   }
 }
 
 /**
  * Add nested query / filters to the Elasticsearch query body.
- * This uses the searchFilters variable to know which fields are available for filtering.
+ *
  * Additional reading on nested queries and datatype:
  * https://www.elastic.co/guide/en/elasticsearch/reference/5.6/nested.html
  * https://www.elastic.co/guide/en/elasticsearch/reference/5.6/query-dsl-nested-query.html
- * @param {Object} param0
- * @param {Object} param0.body Bodybuilder instance
- * @param {string} param0.fieldType The data type of the field to filter by
- * @param {string} param0.field The field to filter by
- * @param {string} param0.filterValue The value to filter by
+ *
+ * @param {object} filter
+ * @param {object} filter.body Bodybuilder instance
+ * @param {string} filter.fieldType The data type of the field to filter by
+ * @param {string} filter.field The field to filter by
+ * @param {string} filter.filterValue The value to filter by
+ * @param {object} filter.filterMappings Mappings of filter properties to Elasticsearch fields. These values are set in the package's config.
  */
-function _addNestedFilter({ body, fieldType, field, filterValue }) {
-  body.query('nested', 'path', searchFilters[fieldType][field]['path'], q => {
-    searchFilters[fieldType][field]['terms'].forEach(term => q.orQuery('term', term, filterValue.toLowerCase()));
+function _addNestedFilter({ body, fieldType, field, filterValue, filterMappings }) {
+  body.query('nested', 'path', filterMappings[fieldType][field]['path'], q => {
+    filterMappings[fieldType][field]['terms'].forEach(term => q.orQuery('term', term, filterValue.toLowerCase()));
     return q;
   });
 }
 
 /**
  * Adds all filters needed for the Elasticsearch query.
- * @param {object} param0
- * @param {object} param0.body Bodybuilder instance
- * @param {object} param0.queryParams search and filter parameters
+ * @param {object} filterParams
+ * @param {object} filterParams.body Bodybuilder instance
+ * @param {object} filterParams.queryParams search and filter parameters
  */
-function _addStringFilters ({ body, queryParams }) {
-  Object.keys(searchFilters['keyword']).forEach(field => {
+function _addStringFilters ({ body, queryParams, filterMappings }) {
+
+  Object.keys(filterMappings['keyword']).forEach(field => {
     if (queryParams[field]) {
-      _addStringFilter({ body, fieldType: 'keyword', field, filterValue: queryParams[field] });
+      _addStringFilter({ body, fieldType: 'keyword', field, filterValue: queryParams[field], filterMappings });
     }
   });
 
-  Object.keys(searchFilters['text']).forEach(field => {
+  Object.keys(filterMappings['text']).forEach(field => {
     if (queryParams[field]) {
-      _addStringFilter({ body, fieldType: 'text', field, filterValue: queryParams[field] });
+      _addStringFilter({ body, fieldType: 'text', field, filterValue: queryParams[field], filterMappings });
     }
   });
 
-  Object.keys(searchFilters['nested']).forEach(field => {
+  Object.keys(filterMappings['nested']).forEach(field => {
     if (queryParams[field]) {
-      _addNestedFilter({ body, fieldType: 'nested', field, filterValue: queryParams[field] });
+      _addNestedFilter({ body, fieldType: 'nested', field, filterValue: queryParams[field], filterMappings });
     }
   });
 }
@@ -297,11 +300,11 @@ function _addRangeFilter ({ body, field, lteRange, gteRange }) {
  * @param {object} param0.body Bodybuilder instance
  * @param {object} param0.queryParams search and filter parameters
  */
-function _addDateRangeFilters ({ body, queryParams }) {
-  const possibleRangeProps = Object.keys(searchFilters['date']);
+function _addDateRangeFilters ({ body, queryParams, filterMappings }) {
+  const possibleRangeProps = Object.keys(filterMappings['date']);
 
   possibleRangeProps.forEach((dateField) => {
-    const field = searchFilters['date'][dateField]['term'];
+    const field = filterMappings['date'][dateField]['term'];
     const { lteRange, gteRange } = _getRanges({ field, queryParams });
     if (lteRange || gteRange) {
       _addRangeFilter({ body, field, lteRange, gteRange });
@@ -352,15 +355,21 @@ function _addIncludeExclude ({ body, queryParams }) {
  * @param {any} q The query parameters a user is searching for
  */
 function _addFieldFilters ({ body, queryParams }) {
-  _addStringFilters({ body, queryParams });
-  _addDateRangeFilters({ body, queryParams });
+  const { filterMappings } = getConfig();
+
+  _addStringFilters({ body, queryParams, filterMappings });
+  _addDateRangeFilters({ body, queryParams, filterMappings });
 }
 
 function _getSortValues(querySortParams) {
   const sortValues = [];
   querySortParams.split(',').forEach(value => {
     if (value) {
-      sortValues.push(value.split('__'));
+      const [field, direction] = value.split('__');
+
+      const { sortMappings } = getConfig();
+
+      sortValues.push([sortMappings[field]['field'], direction ]);
     }
   });
   return sortValues;
@@ -382,33 +391,54 @@ function _getSortOptions(sortValue) {
 }
 
 /**
- * Adds sorting depending on query input parameters.
+ * Adds sorting depending on query input parameters. This functions mutates the body parameter being passed.
  *
  * @param {any} body An instance of a Bodybuilder class
  * @param {any} queryParams The query parameters a user is searching for
  */
 function _addSortOrder ({ body, queryParams }) {
-  body.sort('_score', 'desc');
-  body.sort('score', 'desc');
+  const defaultSortDirection = 'asc';
 
-  if (queryParams['sort'] && (queryParams['sort'] !== 'asc' || queryParams['sort'] !== 'desc')) {
-    const sortValues = _getSortValues(queryParams.sort);
+  if(queryParams.hasOwnProperty('sort')) {
+    if(ELASTICSEARCH_SORT_ORDERS.includes(queryParams.sort)) {
+      body.sort(_setDefaultSort(queryParams.sort));
+    } else {
+      const sortValues = _getSortValues(queryParams.sort);
 
-    sortValues.forEach(sortValue => {
-      const sortField = sortValue[0];
+      sortValues.forEach(sortValue => {
+        const sortField = sortValue[0];
 
-      body.sort(`${sortField}.keyword`,
-        sortValue.length > 1
-          ? _getSortOptions(sortValue)
-          : 'asc');
-    });
+        body.sort(`${sortField}`,
+          sortValue.length > 1
+            ? _getSortOptions(sortValue)
+            : defaultSortDirection);
+      });
+    }
+  } else {
+    body.sort(_setDefaultSort());
   }
 }
 
 /**
+ * Sets the default sort body to be sent to Elasticsearch. The default fields are:
  *
+ * 1. score - This is the data quality score. Sort direction defaults to `desc`.
+ * 2. _score - This is the builtin Elasticsearch search score. Sort direction defaults to `desc`.
+ * 3. name.keyword - This is the keyword representation of the repo.name field. Sort direction defaults to `asc`.
+ * @param {string} sortDirection The direction for the sort ('asc', 'desc').
+ * @returns {Array} A JS Array with the sorting objects expected by the Bodybuilder lib. https://bodybuilder.js.org/docs/#sort
+ */
+function _setDefaultSort(sortDirection=undefined) {
+  return [
+    { "score": sortDirection || 'desc' },
+    { "_score": sortDirection || 'desc' },
+    { "name.keyword": sortDirection || 'asc' }
+  ];
+}
+
+/**
+ * Create the search query for the repos index on Elasticsearch.
  * @param {*} queryParams
- * @param {*} indexMappings
  */
 function createReposSearchQuery ({ queryParams }) {
   let body = new Bodybuilder();
@@ -426,6 +456,7 @@ function createReposSearchQuery ({ queryParams }) {
   _addSizeFromParams({ body, queryParams });
 
   _addIncludeExclude({ body, queryParams });
+
   _addSortOrder({ body, queryParams });
 
   let query = body.build('v2');
