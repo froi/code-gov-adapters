@@ -12,6 +12,9 @@ function getConfig() {
       },
       "agency.name": {
         "term": "agency.name"
+      },
+      "permissions.usageType": {
+        "term": "permissions.usageType"
       }
     },
     "keyword": {
@@ -35,6 +38,9 @@ function getConfig() {
       },
       "language": {
         "term": "languages.keyword"
+      },
+      "permissions.usageType": {
+        "term": "permissions.usageType.keyword"
       }
     },
     "date": {
