@@ -233,12 +233,6 @@ function _addStringFilters ({ body, queryParams, filterMappings }) {
     }
   });
 
-  Object.keys(filterMappings['text']).forEach(field => {
-    if (queryParams[field]) {
-      _addStringFilter({ body, fieldType: 'text', field, filterValue: queryParams[field], filterMappings });
-    }
-  });
-
   Object.keys(filterMappings['nested']).forEach(field => {
     if (queryParams[field]) {
       _addNestedFilter({ body, fieldType: 'nested', field, filterValue: queryParams[field], filterMappings });
