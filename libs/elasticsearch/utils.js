@@ -190,8 +190,9 @@ function _addStringFilter ({ body, fieldType, field, filterValue, filterMappings
   // Eg. http://localhost:3000/api/repos?q=API&license=cc0&license=gpl
   // This is turned into queryParams['permissions.license'] = ['cc0', 'gpl']
   if (filterValue instanceof Array) {
-    filterValue.forEach((item) => {
-      body.orFilter('term', filterMappings[fieldType][field]['term'], _processFilterValue(item));
+    body.filter('bool', (f) => {
+      filterValue.forEach((item) => f.orFilter('term', filterMappings[fieldType][field]['term'], _processFilterValue(item)));  
+      return f;
     });
   } else {
     body.filter('term', filterMappings[fieldType][field]['term'], _processFilterValue(filterValue));
